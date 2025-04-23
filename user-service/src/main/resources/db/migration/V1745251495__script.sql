@@ -1,0 +1,3 @@
+ALTER TABLE profiles
+ADD COLUMN gender VARCHAR(10)
+CHECK (gender IN ('MALE', 'FEMALE'));

@@ -1,0 +1,17 @@
+
+services:
+  user_postgres:
+    image: postgis/postgis:15-3.3  # PostgreSQL 15 + PostGIS 3.3
+    container_name: user_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: usersDB
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"  # доступно на localhost:5434
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  user_postgres_data:
