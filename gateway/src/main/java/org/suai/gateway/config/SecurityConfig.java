@@ -15,7 +15,7 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/api/auth/login", "api/auth/register").permitAll() //keycloak
+                        .pathMatchers("/api/auth/login", "/api/auth/register").permitAll() //keycloak
                         .pathMatchers("/api/users/**").permitAll() //user-service
                         .anyExchange().authenticated()
                 )

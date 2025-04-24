@@ -2,7 +2,6 @@ package org.suai.users.model.dto.serverResponse;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import jakarta.persistence.Column;
 import lombok.*;
 import org.suai.users.model.dto.serverRequest.LocationDTO;
 import org.suai.users.model.enums.Gender;

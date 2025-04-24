@@ -1,0 +1,21 @@
+server:
+  port: 9000
+
+spring:
+
+  application:
+    name: auth-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8181/realms/dating-app-realm
+
+keycloak:
+  server-url: http://localhost:8181
+  realm: dating-app-realm
+  client-id: api-gateway
+  client-secret: CM4MRn9HwHnFrvpOduJ3YapSIOxHlUUm
+  admin-username: admin
+  admin-password: admin

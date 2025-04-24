@@ -2,14 +2,11 @@ server:
   port: 8080
 
 spring:
-
   application:
     name: api-gateway
-
   config:
     import:
       optional:configserver:
-
   cloud:
     gateway:
       routes:
@@ -20,21 +17,27 @@ spring:
           filters:
             - RewritePath=/api/auth/login, /realms/dating-app-realm/protocol/openid-connect/token
 
+
+        - id: auth-service
+          uri: http://localhost:9000
+          predicates:
+            - Path=/api/auth/register
+          filters:
+            - StripPrefix=1
+
+
+
         - id: user-service
           uri: http://localhost:8090
           predicates:
-              - Path=/api/users/**
+            - Path=/api/users/**
           filters:
-              - StripPrefix=2 # удаляет "/api/users", оставляя "/profiles/..."
+            - StripPrefix=2
 
-keycloak:
-  server-url: http://localhost:8181
-  realm: dating-app-realm
-  client-id: api-gateway
-  client-secret: CM4MRn9HwHnFrvpOduJ3YapSIOxHlUUm
-  admin-username: admin
-  admin-password: admin
-
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.web: DEBUG
 
 #eureka:
 #  client:

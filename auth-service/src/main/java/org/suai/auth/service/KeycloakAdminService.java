@@ -1,8 +1,7 @@
-package org.suai.gateway.service;
+package org.suai.auth.service;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ws.rs.core.Response;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
@@ -12,8 +11,11 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
-import org.suai.gateway.model.dto.UserRegisterRequestDTO;
+import org.suai.auth.model.dto.UserRegisterRequestDTO;
 
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +82,8 @@ public class KeycloakAdminService {
         }
     }
 
-    public void deleteUserByEmail(String email) {
+    public void deleteUser(String profileId) {
+        String email = this.getEmailFromSecurityContext();
         RealmResource realmResource = keycloakClient.realm(realm);
         UsersResource usersResource = realmResource.users();
 
@@ -95,5 +98,13 @@ public class KeycloakAdminService {
 
         String userId = userOpt.get().getId();
         usersResource.delete(userId);
+    }
+
+    private String getEmailFromSecurityContext() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            return jwtAuth.getToken().getClaimAsString("email");
+        }
+        throw new RuntimeException("Unable to extract email from token");
     }
 }

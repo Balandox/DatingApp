@@ -1,16 +1,22 @@
 package org.suai.users.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.suai.users.model.dto.serverRequest.CreateProfileRequestDTO;
 import org.suai.users.model.dto.serverRequest.LocationDTO;
 import org.suai.users.model.dto.serverRequest.UpdateProfileRequestDTO;
@@ -47,6 +53,8 @@ public class ProfileService implements IProfileService {
     private FactRepository factRepository;
 
     private ProfileFactRepository profileFactRepository;
+
+    private RestTemplate authServiceRestTemplate;
 
     private static final GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -175,14 +183,31 @@ public class ProfileService implements IProfileService {
     }
 
     @Override
-    public GetProfileResponseDTO deleteProfile(Long profileId) {
+    public GetProfileResponseDTO deleteProfile(Long profileId, HttpServletRequest request) {
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new EntityNotFoundException("Profile not found"));
 
+        String token = request.getHeader("Authorization");
+        System.out.println(token);
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new IllegalStateException("Missing or invalid Authorization header");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", token);
+        ResponseEntity<Void> response = authServiceRestTemplate.exchange(
+                "http://localhost:9000/auth/delete/" + profileId,
+                HttpMethod.DELETE,
+                new HttpEntity<>(headers),
+                Void.class
+        );
+        if(!response.getStatusCode().is2xxSuccessful())
+            return GetProfileResponseDTO.builder()
+                    .message("Error on deletion" + profileId)
+                    .build();
+
         profileFactRepository.deleteByProfileId(profileId);
-
         profile.getProfileFacts().clear();
-
         profileRepository.delete(profile);
 
         return GetProfileResponseDTO.builder()

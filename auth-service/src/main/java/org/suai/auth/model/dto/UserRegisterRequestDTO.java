@@ -1,10 +1,10 @@
-package org.suai.gateway.model.dto;
+package org.suai.auth.model.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 @Data
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class UserRegisterRequestDTO {
 
     private String email;
