@@ -5,8 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -17,28 +15,22 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
+import org.suai.users.model.dto.PhotoDTO;
 import org.suai.users.model.dto.serverRequest.CreateProfileRequestDTO;
 import org.suai.users.model.dto.serverRequest.LocationDTO;
 import org.suai.users.model.dto.serverRequest.UpdateProfileRequestDTO;
 import org.suai.users.model.dto.serverResponse.GetProfileResponseDTO;
-import org.suai.users.model.entities.Fact;
-import org.suai.users.model.entities.Interest;
-import org.suai.users.model.entities.Profile;
-import org.suai.users.model.entities.ProfileFact;
+import org.suai.users.model.entities.*;
 import org.suai.users.model.entities.pk.ProfileFactId;
 import org.suai.users.model.enums.UserFacts;
 import org.suai.users.model.enums.UserInterest;
-import org.suai.users.repositories.FactRepository;
-import org.suai.users.repositories.InterestRepository;
-import org.suai.users.repositories.ProfileFactRepository;
-import org.suai.users.repositories.ProfileRepository;
+import org.suai.users.repositories.*;
 import org.suai.users.service.interfaces.IProfileService;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,6 +43,8 @@ public class ProfileService implements IProfileService {
     private InterestRepository interestRepository;
 
     private FactRepository factRepository;
+
+    private PhotoRepository photoRepository;
 
     private ProfileFactRepository profileFactRepository;
 
@@ -85,7 +79,6 @@ public class ProfileService implements IProfileService {
 
         profile = profileRepository.save(profile);
 
-
         if (requestDTO.getFacts() != null) {
             for (Map.Entry<UserFacts, String> entry : requestDTO.getFacts().entrySet()) {
                 Fact fact = factRepository.findByName(entry.getKey())
@@ -98,6 +91,28 @@ public class ProfileService implements IProfileService {
                                 .factValue(entry.getValue()).build());
             }
         }
+
+        if (requestDTO.getPhotos() != null && !requestDTO.getPhotos().isEmpty()) {
+            for (int i = 0; i < requestDTO.getPhotos().size(); i++) {
+                MultipartFile file = requestDTO.getPhotos().get(i);
+                try {
+                    Photo photo = Photo.builder()
+                            .profile(profile)
+                            .image(file.getBytes())
+                            .contentType(file.getContentType())
+                            .fileName(file.getOriginalFilename())
+                            .position(i + 1)
+                            .uploadedAt(LocalDateTime.now())
+                            .build();
+
+                    profile.getPhotos().add(photo);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to process photo", e);
+                }
+            }
+        }
+        profile = profileRepository.save(profile);
+
         return GetProfileResponseDTO.builder()
                 .profileId(profile.getId())
                 .message("Profile was created")
@@ -116,6 +131,17 @@ public class ProfileService implements IProfileService {
         Map<UserFacts, String> factMap = facts.stream()
                 .collect(Collectors.toMap(f -> f.getFact().getName(), ProfileFact::getFactValue));
 
+        List<PhotoDTO> photoDTOs = profile.getPhotos().stream()
+                .sorted(Comparator.comparingInt(Photo::getPosition))
+                .map(photo -> PhotoDTO.builder()
+                        .contentType(photo.getContentType())
+                        .fileName(photo.getFileName())
+                        .position(photo.getPosition())
+                        .uploadedAt(photo.getUploadedAt())
+                        .downloadUri("/profiles/" + profileId + "/photos/" + photo.getPosition())
+                        .build())
+                .toList();
+
         return GetProfileResponseDTO.builder()
                 .profileId(profile.getId())
                 .name(profile.getName())
@@ -130,7 +156,15 @@ public class ProfileService implements IProfileService {
                 .notificationsEnabled(profile.getNotificationsEnabled())
                 .interests(interests)
                 .facts(factMap)
+                .photos(photoDTOs)
                 .build();
+    }
+
+    @Override
+    public Photo getProfilePhoto(Long profileId, Integer photoId) {
+        return photoRepository.findByPositionAndProfileId(photoId, profileId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Photo not found for profile: " + profileId));
     }
 
     @Override
@@ -178,6 +212,35 @@ public class ProfileService implements IProfileService {
                 profileFactRepository.save(pf);
             }
         }
+
+/*        if (updateDTO.getPhotosToDelete() != null) {
+            profile.getPhotos().removeIf(photo ->
+                    updateDTO.getPhotosToDelete().contains(photo.getPosition())
+            );
+        }*/
+
+        if (updateDTO.getNewPhotos() != null) {
+            photoRepository.deleteByProfileId(profileId);
+            profile.getPhotos().clear();
+            int newPhotoPosition = 1;
+            for (MultipartFile file : updateDTO.getNewPhotos()) {
+                try {
+                    Photo photo = Photo.builder()
+                            .profile(profile)
+                            .image(file.getBytes())
+                            .contentType(file.getContentType())
+                            .fileName(file.getOriginalFilename())
+                            .position(newPhotoPosition++)
+                            .uploadedAt(LocalDateTime.now())
+                            .build();
+                    profile.getPhotos().add(photo);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to upload photo", e);
+                }
+            }
+        }
+
+        profileRepository.save(profile);
 
         return getProfile(profile.getId());
     }

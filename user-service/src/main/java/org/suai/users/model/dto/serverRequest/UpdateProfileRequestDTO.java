@@ -3,6 +3,7 @@ package org.suai.users.model.dto.serverRequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 import org.suai.users.model.enums.Gender;
 import org.suai.users.model.enums.UserFacts;
 import org.suai.users.model.enums.UserInterest;
@@ -29,8 +30,9 @@ public class UpdateProfileRequestDTO {
 
     private Map<UserFacts, String> facts; // пример: {"RELIGION": "Христианство", "GOAL": "дружба"}
 
+    private List<MultipartFile> newPhotos; // Новые фото
+
     private Boolean isActive;
     private Boolean notificationsEnabled;
-
     private String email;
 }

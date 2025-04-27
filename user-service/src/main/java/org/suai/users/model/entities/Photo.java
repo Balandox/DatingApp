@@ -1,16 +1,16 @@
 package org.suai.users.model.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Entity
 @Table(name = "photos")
 public class Photo {
@@ -24,6 +24,7 @@ public class Photo {
 
     @Lob
     @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.BINARY)
     private byte[] image;
 
     @Column(name = "content_type", nullable = false)

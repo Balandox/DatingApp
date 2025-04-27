@@ -3,6 +3,8 @@ package org.suai.users.model.dto.serverResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.suai.users.model.dto.PhotoDTO;
 import org.suai.users.model.dto.serverRequest.LocationDTO;
 import org.suai.users.model.enums.Gender;
 import org.suai.users.model.enums.UserFacts;
@@ -26,9 +28,10 @@ public class GetProfileResponseDTO {
     private LocationDTO location;
     private List<UserInterest> interests;
     private Map<UserFacts, String> facts;
+    private List<PhotoDTO> photos;
+
     private Boolean isActive;
     private Boolean notificationsEnabled;
-
     private String email;
     private LocalDateTime registeredAt;
     private LocalDateTime lastLogin;
