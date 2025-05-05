@@ -40,3 +40,10 @@ spring:
     url: jdbc:postgresql://${cloud.db-host}:5434/usersDB
     user: user
     password: password
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/  # адрес Eureka Server
+  instance:
+    prefer-ip-address: true  # регистрировать IP вместо hostname
